@@ -85,6 +85,7 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="clsAPIKodi.vb" />
     <Compile Include="frmSettingsHolder.Designer.vb">
       <DependentUpon>frmSettingsHolder.vb</DependentUpon>
     </Compile>

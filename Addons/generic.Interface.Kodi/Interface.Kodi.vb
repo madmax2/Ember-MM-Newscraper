@@ -20,7 +20,7 @@
 
 Imports EmberAPI
 
-Public Class Kodi
+Public Class KodiInterface
     Implements Interfaces.GenericModule
 
 #Region "Delegates"

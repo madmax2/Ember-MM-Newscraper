@@ -46,12 +46,10 @@ Public Class KodiInterface
     Private cmnuSep_Movies As New System.Windows.Forms.ToolStripSeparator
     Private cmnuSep_Episodes As New System.Windows.Forms.ToolStripSeparator
     Private cmnuSep_Shows As New System.Windows.Forms.ToolStripSeparator
-    Private WithEvents cmnuKodiAuto_Movie As New System.Windows.Forms.ToolStripMenuItem
-    Private WithEvents cmnuKodiManual_Movie As New System.Windows.Forms.ToolStripMenuItem
-    Private WithEvents cmnuKodiAuto_TVEpisode As New System.Windows.Forms.ToolStripMenuItem
-    Private WithEvents cmnuKodiManual_TVEpisode As New System.Windows.Forms.ToolStripMenuItem
-    Private WithEvents cmnuKodiAuto_TVShow As New System.Windows.Forms.ToolStripMenuItem
-    Private WithEvents cmnuKodiManual_TVShows As New System.Windows.Forms.ToolStripMenuItem
+    Private WithEvents cmnuKodiAdd_Movie As New System.Windows.Forms.ToolStripMenuItem
+    Private WithEvents cmnuKodiSync_Movie As New System.Windows.Forms.ToolStripMenuItem
+    Private WithEvents cmnuKodiSync_TVEpisode As New System.Windows.Forms.ToolStripMenuItem
+    Private WithEvents cmnuKodiSync_TVShow As New System.Windows.Forms.ToolStripMenuItem
 
 #End Region 'Fields
 
@@ -156,34 +154,7 @@ Public Class KodiInterface
         Return New Interfaces.ModuleResult With {.breakChain = False}
     End Function
 
-    Private Sub cmnuRenamerAuto_TVEpisode_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmnuKodiAuto_TVEpisode.Click
-        If Master.currShow.IsOnlineEp OrElse FileUtils.Common.CheckOnlineStatus_Episode(Master.currShow, True) Then
-            Cursor.Current = Cursors.WaitCursor
-            Dim indX As Integer = ModulesManager.Instance.RuntimeObjects.MediaListEpisodes.SelectedRows(0).Index
-            Dim ID As Integer = Convert.ToInt32(ModulesManager.Instance.RuntimeObjects.MediaListEpisodes.Item(0, indX).Value)
-            'FileFolderRenamer.RenameSingle_Episode(Master.currShow, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, False, True, True, True)
-            RaiseEvent GenericEvent(Enums.ModuleEventType.AfterEdit_TVEpisode, New List(Of Object)(New Object() {ID, indX}))
-            Cursor.Current = Cursors.Default
-        End If
-    End Sub
-
-    Private Sub cmnuRenamerManual_TVEpisode_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmnuKodiManual_TVEpisode.Click
-        If Master.currShow.IsOnlineEp OrElse FileUtils.Common.CheckOnlineStatus_Episode(Master.currShow, True) Then
-            Dim indX As Integer = ModulesManager.Instance.RuntimeObjects.MediaListEpisodes.SelectedRows(0).Index
-            Dim ID As Integer = Convert.ToInt32(ModulesManager.Instance.RuntimeObjects.MediaListEpisodes.Item(0, indX).Value)
-            'Using dRenameManual As New dlgRenameManual_TVEpisode
-            '    Select Case dRenameManual.ShowDialog()
-            '        Case Windows.Forms.DialogResult.OK
-            '            RaiseEvent GenericEvent(Enums.ModuleEventType.AfterEdit_TVEpisode, New List(Of Object)(New Object() {ID, indX}))
-            '    End Select
-            'End Using
-        End If
-    End Sub
-
-    Private Sub cmnuRenamerAuto_Movie_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmnuKodiAuto_Movie.Click
-
-
-
+    Private Sub cmnuKodiAdd_Movie_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmnuKodiAdd_Movie.Click
         If Master.currMovie.IsOnline OrElse FileUtils.Common.CheckOnlineStatus_Movie(Master.currMovie, True) Then
             Cursor.Current = Cursors.WaitCursor
             Dim indX As Integer = ModulesManager.Instance.RuntimeObjects.MediaListMovies.SelectedRows(0).Index
@@ -197,28 +168,52 @@ Public Class KodiInterface
 
             Dim _json As New Kodi.JSON(Settings)
 
-            _json.UpdateMovieInfo(Master.currMovie.ID)
+            If _json.ScanVideoPath(Master.currMovie.ID) Then
+                ModulesManager.Instance.RunGeneric(Enums.ModuleEventType.Notification, New List(Of Object)(New Object() {"info", Nothing, "Kodi Interface", "Kodi running update...", New Bitmap(My.Resources.logo)}))
+            Else
+                ModulesManager.Instance.RunGeneric(Enums.ModuleEventType.Notification, New List(Of Object)(New Object() {"error", 1, "Kodi Interface", "Update failed", Nothing}))
+            End If
 
-            'FileFolderRenamer.RenameSingle_Movie(Master.currMovie, MySettings.FoldersPattern_Movies, MySettings.FilesPattern_Movies, False, True, True, True)
-            RaiseEvent GenericEvent(Enums.ModuleEventType.AfterEdit_Movie, New List(Of Object)(New Object() {ID, indX}))
             Cursor.Current = Cursors.Default
         End If
     End Sub
 
-    Private Sub cmnuRenamerManual_Movie_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmnuKodiManual_Movie.Click
-        If Master.currMovie.IsOnline OrElse FileUtils.Common.CheckOnlineStatus_Movie(Master.currMovie, True) Then
-            Dim indX As Integer = ModulesManager.Instance.RuntimeObjects.MediaListMovies.SelectedRows(0).Index
-            Dim ID As Integer = Convert.ToInt32(ModulesManager.Instance.RuntimeObjects.MediaListMovies.Item(0, indX).Value)
-            'Using dRenameManual As New dlgRenameManual_Movie
-            '    Select Case dRenameManual.ShowDialog()
-            '        Case Windows.Forms.DialogResult.OK
-            '            RaiseEvent GenericEvent(Enums.ModuleEventType.AfterEdit_Movie, New List(Of Object)(New Object() {ID, indX}))
-            '    End Select
-            'End Using
+    Private Sub cmnuKodiSync_TVEpisode_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmnuKodiSync_TVEpisode.Click
+        If Master.currShow.IsOnlineEp OrElse FileUtils.Common.CheckOnlineStatus_Episode(Master.currShow, True) Then
+            Cursor.Current = Cursors.WaitCursor
+            Dim indX As Integer = ModulesManager.Instance.RuntimeObjects.MediaListEpisodes.SelectedRows(0).Index
+            Dim ID As Integer = Convert.ToInt32(ModulesManager.Instance.RuntimeObjects.MediaListEpisodes.Item(0, indX).Value)
+            'FileFolderRenamer.RenameSingle_Episode(Master.currShow, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, False, True, True, True)
+            RaiseEvent GenericEvent(Enums.ModuleEventType.AfterEdit_TVEpisode, New List(Of Object)(New Object() {ID, indX}))
+            Cursor.Current = Cursors.Default
         End If
     End Sub
 
-    Private Sub cmnuRenamerAuto_TVShow_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmnuKodiAuto_TVShow.Click
+    Private Sub cmnuKodiSync_Movie_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmnuKodiSync_Movie.Click
+        If Master.currMovie.IsOnline OrElse FileUtils.Common.CheckOnlineStatus_Movie(Master.currMovie, True) Then
+            Cursor.Current = Cursors.WaitCursor
+            Dim indX As Integer = ModulesManager.Instance.RuntimeObjects.MediaListMovies.SelectedRows(0).Index
+            Dim ID As Integer = Convert.ToInt32(ModulesManager.Instance.RuntimeObjects.MediaListMovies.Item(0, indX).Value)
+
+            Dim Settings As Kodi.JSON.MySettings
+            Settings.HostIP = MySettings.HostIP
+            Settings.Password = MySettings.Password
+            Settings.Username = MySettings.Username
+            Settings.WebserverPort = MySettings.WebserverPort
+
+            Dim _json As New Kodi.JSON(Settings)
+
+            If _json.UpdateMovieInfo(Master.currMovie.ID) Then
+                ModulesManager.Instance.RunGeneric(Enums.ModuleEventType.Notification, New List(Of Object)(New Object() {"info", Nothing, "Kodi Interface", "Sync OK", New Bitmap(My.Resources.logo)}))
+            Else
+                ModulesManager.Instance.RunGeneric(Enums.ModuleEventType.Notification, New List(Of Object)(New Object() {"error", 1, "Kodi Interface", "Sync failed", Nothing}))
+            End If
+
+            Cursor.Current = Cursors.Default
+        End If
+    End Sub
+
+    Private Sub cmnuKodiSync_TVShow_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmnuKodiSync_TVShow.Click
         If Master.currShow.isOnlineShow OrElse FileUtils.Common.CheckOnlineStatus_Show(Master.currShow, True) Then
             Cursor.Current = Cursors.WaitCursor
             Dim indX As Integer = ModulesManager.Instance.RuntimeObjects.MediaListShows.SelectedRows(0).Index
@@ -226,19 +221,6 @@ Public Class KodiInterface
             'FileFolderRenamer.RenameSingle_Show(Master.currShow, MySettings.FoldersPattern_Shows, False, False, True, True)
             RaiseEvent GenericEvent(Enums.ModuleEventType.AfterEdit_TVShow, New List(Of Object)(New Object() {ID, indX}))
             Cursor.Current = Cursors.Default
-        End If
-    End Sub
-
-    Private Sub cmnuRenamerManual_TVShow_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmnuKodiManual_TVShows.Click
-        If Master.currShow.isOnlineShow OrElse FileUtils.Common.CheckOnlineStatus_Show(Master.currShow, True) Then
-            Dim indX As Integer = ModulesManager.Instance.RuntimeObjects.MediaListShows.SelectedRows(0).Index
-            Dim ID As Integer = Convert.ToInt32(ModulesManager.Instance.RuntimeObjects.MediaListShows.Item(0, indX).Value)
-            'Using dRenameManual As New dlgRenameManual_TVShow
-            '    Select Case dRenameManual.ShowDialog()
-            '        Case Windows.Forms.DialogResult.OK
-            '            RaiseEvent GenericEvent(Enums.ModuleEventType.AfterEdit_TVShow, New List(Of Object)(New Object() {ID, indX}))
-            '    End Select
-            'End Using
         End If
     End Sub
 
@@ -299,10 +281,10 @@ Public Class KodiInterface
         cmnuKodi_Movies.Image = New Bitmap(My.Resources.icon)
         cmnuKodi_Movies.Text = "Kodi"
         cmnuKodi_Movies.ShortcutKeys = CType((System.Windows.Forms.Keys.Control Or System.Windows.Forms.Keys.R), System.Windows.Forms.Keys)
-        cmnuKodiAuto_Movie.Text = "Sync Auto"
-        cmnuKodiManual_Movie.Text = "Sync Manual"
-        cmnuKodi_Movies.DropDownItems.Add(cmnuKodiAuto_Movie)
-        cmnuKodi_Movies.DropDownItems.Add(cmnuKodiManual_Movie)
+        cmnuKodiAdd_Movie.Text = "Add"
+        cmnuKodiSync_Movie.Text = "Sync"
+        cmnuKodi_Movies.DropDownItems.Add(cmnuKodiAdd_Movie)
+        cmnuKodi_Movies.DropDownItems.Add(cmnuKodiSync_Movie)
 
         SetToolsStripItem_Movies(cmnuSep_Movies)
         SetToolsStripItem_Movies(cmnuKodi_Movies)
@@ -311,10 +293,8 @@ Public Class KodiInterface
         cmnuKodi_Episodes.Image = New Bitmap(My.Resources.icon)
         cmnuKodi_Episodes.Text = "Kodi"
         cmnuKodi_Episodes.ShortcutKeys = CType((System.Windows.Forms.Keys.Control Or System.Windows.Forms.Keys.R), System.Windows.Forms.Keys)
-        cmnuKodiAuto_TVEpisode.Text = "Sync Auto"
-        cmnuKodiManual_TVEpisode.Text = "Sync Manual"
-        cmnuKodi_Episodes.DropDownItems.Add(cmnuKodiAuto_TVEpisode)
-        cmnuKodi_Episodes.DropDownItems.Add(cmnuKodiManual_TVEpisode)
+        cmnuKodiSync_TVEpisode.Text = "Sync"
+        cmnuKodi_Episodes.DropDownItems.Add(cmnuKodiSync_TVEpisode)
 
         SetToolsStripItem_Episodes(cmnuSep_Episodes)
         SetToolsStripItem_Episodes(cmnuKodi_Episodes)
@@ -323,10 +303,8 @@ Public Class KodiInterface
         cmnuKodi_Shows.Image = New Bitmap(My.Resources.icon)
         cmnuKodi_Shows.Text = "Kodi"
         cmnuKodi_Shows.ShortcutKeys = CType((System.Windows.Forms.Keys.Control Or System.Windows.Forms.Keys.R), System.Windows.Forms.Keys)
-        cmnuKodiAuto_TVShow.Text = "Sync Auto"
-        cmnuKodiManual_TVShows.Text = "Sync Manual"
-        cmnuKodi_Shows.DropDownItems.Add(cmnuKodiAuto_TVShow)
-        cmnuKodi_Shows.DropDownItems.Add(cmnuKodiManual_TVShows)
+        cmnuKodiSync_TVShow.Text = "Sync"
+        cmnuKodi_Shows.DropDownItems.Add(cmnuKodiSync_TVShow)
 
         SetToolsStripItem_Shows(cmnuSep_Shows)
         SetToolsStripItem_Shows(cmnuKodi_Shows)
@@ -405,7 +383,6 @@ Public Class KodiInterface
     End Sub
 
     Private Sub mnuMainToolsRenamer_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuMainToolsKodi.Click, cmnuTrayToolsKodi.Click
-
         RaiseEvent GenericEvent(Enums.ModuleEventType.Generic, New List(Of Object)(New Object() {"controlsenabled", False}))
         Select Case ModulesManager.Instance.RuntimeObjects.MediaTabSelected.ContentType
             Case Enums.Content_Type.Movie

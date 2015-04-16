@@ -157,6 +157,7 @@ Partial Class frmSettingsHolder
         '
         Me.txtPassword.Location = New System.Drawing.Point(94, 87)
         Me.txtPassword.Name = "txtPassword"
+        Me.txtPassword.PasswordChar = Global.Microsoft.VisualBasic.ChrW(42)
         Me.txtPassword.Size = New System.Drawing.Size(100, 22)
         Me.txtPassword.TabIndex = 3
         '

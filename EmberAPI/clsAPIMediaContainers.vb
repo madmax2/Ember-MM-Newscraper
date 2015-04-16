@@ -831,7 +831,7 @@ Namespace MediaContainers
         <XmlIgnore()> _
         Public ReadOnly Property Top250Specified() As Boolean
             Get
-                Return Not String.IsNullOrEmpty(Me._top250)
+                Return Not String.IsNullOrEmpty(Me._top250) AndAlso Not Me._top250 = "0"
             End Get
         End Property
 

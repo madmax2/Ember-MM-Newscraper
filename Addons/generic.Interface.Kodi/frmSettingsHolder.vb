@@ -46,6 +46,10 @@ Public Class frmSettingsHolder
         RaiseEvent ModuleEnabledChanged(chkEnabled.Checked, 0)
     End Sub
 
+    Private Sub TextboxTextChanged(sender As Object, e As EventArgs) Handles txtHostIP.TextChanged, txtPassword.TextChanged, txtWebserverPort.TextChanged, txtUsername.TextChanged
+        RaiseEvent ModuleSettingsChanged()
+    End Sub
+
     Sub SetUp()
         
     End Sub

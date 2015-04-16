@@ -181,10 +181,24 @@ Public Class KodiInterface
     End Sub
 
     Private Sub cmnuRenamerAuto_Movie_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmnuKodiAuto_Movie.Click
+
+
+
         If Master.currMovie.IsOnline OrElse FileUtils.Common.CheckOnlineStatus_Movie(Master.currMovie, True) Then
             Cursor.Current = Cursors.WaitCursor
             Dim indX As Integer = ModulesManager.Instance.RuntimeObjects.MediaListMovies.SelectedRows(0).Index
             Dim ID As Integer = Convert.ToInt32(ModulesManager.Instance.RuntimeObjects.MediaListMovies.Item(0, indX).Value)
+
+            Dim Settings As Kodi.JSON.MySettings
+            Settings.HostIP = MySettings.HostIP
+            Settings.Password = MySettings.Password
+            Settings.Username = MySettings.Username
+            Settings.WebserverPort = MySettings.WebserverPort
+
+            Dim _json As New Kodi.JSON(Settings)
+
+            _json.UpdateMovieInfo(Master.currMovie.ID)
+
             'FileFolderRenamer.RenameSingle_Movie(Master.currMovie, MySettings.FoldersPattern_Movies, MySettings.FilesPattern_Movies, False, True, True, True)
             RaiseEvent GenericEvent(Enums.ModuleEventType.AfterEdit_Movie, New List(Of Object)(New Object() {ID, indX}))
             Cursor.Current = Cursors.Default
@@ -367,6 +381,10 @@ Public Class KodiInterface
         Dim SPanel As New Containers.SettingsPanel
         Me._setup = New frmSettingsHolder
         Me._setup.chkEnabled.Checked = Me._enabled
+        Me._setup.txtHostIP.Text = MySettings.HostIP
+        Me._setup.txtPassword.Text = MySettings.Password
+        Me._setup.txtUsername.Text = MySettings.Username
+        Me._setup.txtWebserverPort.Text = MySettings.WebserverPort
         SPanel.Name = Me._Name
         SPanel.Text = "Kodi Interface"
         SPanel.Prefix = "Kodi_"
@@ -380,6 +398,10 @@ Public Class KodiInterface
     End Function
 
     Sub LoadSettings()
+        MySettings.HostIP = clsAdvancedSettings.GetSetting("HostIP", String.Empty)
+        MySettings.Password = clsAdvancedSettings.GetSetting("Password", String.Empty)
+        MySettings.Username = clsAdvancedSettings.GetSetting("Username", String.Empty)
+        MySettings.WebserverPort = clsAdvancedSettings.GetSetting("WebserverPort", String.Empty)
     End Sub
 
     Private Sub mnuMainToolsRenamer_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuMainToolsKodi.Click, cmnuTrayToolsKodi.Click
@@ -414,6 +436,10 @@ Public Class KodiInterface
 
     Sub SaveEmberExternalModule(ByVal DoDispose As Boolean) Implements Interfaces.GenericModule.SaveSetup
         Me._enabled = Me._setup.chkEnabled.Checked
+        MySettings.HostIP = Me._setup.txtHostIP.Text
+        MySettings.Password = Me._setup.txtPassword.Text
+        MySettings.Username = Me._setup.txtUsername.Text
+        MySettings.WebserverPort = Me._setup.txtWebserverPort.Text
         SaveSettings()
         If DoDispose Then
             RemoveHandler Me._setup.ModuleEnabledChanged, AddressOf Handle_SetupChanged
@@ -424,6 +450,10 @@ Public Class KodiInterface
 
     Sub SaveSettings()
         Using settings = New clsAdvancedSettings()
+            settings.SetSetting("HostIP", MySettings.HostIP)
+            settings.SetSetting("Password", MySettings.Password)
+            settings.SetSetting("Username", MySettings.Username)
+            settings.SetSetting("WebserverPort", MySettings.WebserverPort)
         End Using
     End Sub
 
@@ -434,6 +464,11 @@ Public Class KodiInterface
     Structure _MySettings
 
 #Region "Fields"
+
+        Dim Username As String
+        Dim Password As String
+        Dim HostIP As String
+        Dim WebserverPort As String
 
 #End Region 'Fields
 

@@ -107,7 +107,58 @@ Namespace Kodi
                 Dim mRuntime As String = If(uMovie.Movie.RuntimeSpecified, uMovie.Movie.Runtime, "0")
                 Dim mYear As String = If(uMovie.Movie.YearSpecified, uMovie.Movie.Year, "0")
                 Dim mRating As String = If(uMovie.Movie.RatingSpecified, uMovie.Movie.Rating, "0")
-                Dim mTop250 As String = If(uMovie.Movie.Top250Specified, uMovie.Movie.Top250, "0")               '
+                Dim mTop250 As String = If(uMovie.Movie.Top250Specified, uMovie.Movie.Top250, "0")
+
+                'arrays
+                'Countries
+                Dim mCountries As String = String.Empty
+                Dim mCountryList As List(Of String) = uMovie.Movie.Countries
+                For i As Integer = 0 To mCountryList.Count - 1
+                    mCountryList.Item(i) = Web.HttpUtility.JavaScriptStringEncode(mCountryList.Item(i), True)
+                Next
+                mCountries = String.Join(" , ", mCountryList.ToArray)
+
+                'Directors
+                Dim mDirectors As String = String.Empty
+                Dim mDirectorList As List(Of String) = uMovie.Movie.Directors
+                For i As Integer = 0 To mDirectorList.Count - 1
+                    mDirectorList.Item(i) = Web.HttpUtility.JavaScriptStringEncode(mDirectorList.Item(i), True)
+                Next
+                mDirectors = String.Join(" , ", mDirectorList.ToArray)
+
+                'Genres
+                Dim mGenres As String = String.Empty
+                Dim mGenreList As List(Of String) = uMovie.Movie.Genres
+                For i As Integer = 0 To mGenreList.Count - 1
+                    mGenreList.Item(i) = Web.HttpUtility.JavaScriptStringEncode(mGenreList.Item(i), True)
+                Next
+                mGenres = String.Join(" , ", mGenreList.ToArray)
+
+                'Studios
+                Dim mStudios As String = String.Empty
+                Dim mStudioList As List(Of String) = uMovie.Movie.Studios
+                For i As Integer = 0 To mStudioList.Count - 1
+                    mStudioList.Item(i) = Web.HttpUtility.JavaScriptStringEncode(mStudioList.Item(i), True)
+                Next
+                mStudios = String.Join(" , ", mStudioList.ToArray)
+
+                'Tags
+                Dim mTags As String = String.Empty
+                Dim mTagList As List(Of String) = uMovie.Movie.Tags
+                For i As Integer = 0 To mTagList.Count - 1
+                    mTagList.Item(i) = Web.HttpUtility.JavaScriptStringEncode(mTagList.Item(i), True)
+                Next
+                mTags = String.Join(" , ", mTagList.ToArray)
+
+                'Writers (Credits)
+                Dim mWriters As String = String.Empty
+                Dim mWriterList As List(Of String) = uMovie.Movie.Credits
+                For i As Integer = 0 To mWriterList.Count - 1
+                    mWriterList.Item(i) = Web.HttpUtility.JavaScriptStringEncode(mWriterList.Item(i), True)
+                Next
+                mWriters = String.Join(" , ", mWriterList.ToArray)
+
+
 
                 'string or null
                 Dim mBanner As String = If(Not String.IsNullOrEmpty(uMovie.BannerPath), _
@@ -142,6 +193,12 @@ Namespace Kodi
                                                       """top250"": ", mTop250, ", ", _
                                                       """sorttitle"": ", mSortTitle, ", ", _
                                                       """set"": ", mSet, ", ", _
+                                                      """country"": [", mCountries, "], ", _
+                                                      """director"": [", mDirectors, "], ", _
+                                                      """genre"": [", mGenres, "], ", _
+                                                      """studio"": [", mStudios, "], ", _
+                                                      """tag"": [", mTags, "], ", _
+                                                      """writer"": [", mWriters, "], ", _
                                                       """art"": {", _
                                                       """banner"": ", mBanner, ", ", _
                                                       """clearart"": ", mClearArt, ", ", _

@@ -84,13 +84,23 @@ Namespace Kodi
                 Dim mPlot As String = Web.HttpUtility.JavaScriptStringEncode(uMovie.Movie.Plot, True)
                 Dim mMPAA As String = Web.HttpUtility.JavaScriptStringEncode(uMovie.Movie.MPAA, True)
                 Dim mImdbnumber As String = Web.HttpUtility.JavaScriptStringEncode(uMovie.Movie.ID, True)
-                Dim mVotes As String = Web.HttpUtility.JavaScriptStringEncode(uMovie.Movie.Votes, True)
                 Dim mOriginalTitle As String = Web.HttpUtility.JavaScriptStringEncode(uMovie.Movie.OriginalTitle, True)
                 Dim mTagline As String = Web.HttpUtility.JavaScriptStringEncode(uMovie.Movie.Tagline, True)
                 Dim mOutline As String = Web.HttpUtility.JavaScriptStringEncode(uMovie.Movie.Outline, True)
                 Dim mSortTitle As String = Web.HttpUtility.JavaScriptStringEncode(uMovie.Movie.SortTitle, True)
                 Dim mTrailer As String = Web.HttpUtility.JavaScriptStringEncode(If(Not String.IsNullOrEmpty(uMovie.TrailerPath), uMovie.TrailerPath, If(uMovie.Movie.TrailerSpecified, uMovie.Movie.Trailer, String.Empty)), True)
                 Dim mSet As String = Web.HttpUtility.JavaScriptStringEncode(If(uMovie.Movie.Sets.Count > 0, uMovie.Movie.Sets.Item(0).Title, String.Empty), True)
+
+                'digit grouping symbol for Votes count
+                Dim mVotes As String = Web.HttpUtility.JavaScriptStringEncode(uMovie.Movie.Votes, True)
+                If Master.eSettings.GeneralDigitGrpSymbolVotes Then
+                    If uMovie.Movie.VotesSpecified Then
+                        Dim vote As String = Double.Parse(uMovie.Movie.Votes, Globalization.CultureInfo.InvariantCulture).ToString("N0", Globalization.CultureInfo.CurrentCulture)
+                        If vote IsNot Nothing Then
+                            mVotes = Web.HttpUtility.JavaScriptStringEncode(vote, True)
+                        End If
+                    End If
+                End If
 
                 'integer or 0
                 Dim mPlaycount As String = If(uMovie.Movie.PlayCountSpecified, uMovie.Movie.PlayCount, "0")
@@ -182,11 +192,6 @@ Namespace Kodi
             Return movieID
         End Function
 
-        Public Function SetMovieDetails() As Boolean
-            Dim test As String = SendJSON("test")
-            Return True
-        End Function
-
         Private Function SendJSON(ByRef Send As String) As String
             Dim Ret As String = String.Empty
             Try
@@ -212,6 +217,7 @@ Namespace Kodi
                 response.Close()
             Catch ex As Exception
                 logger.Error(New StackFrame().GetMethod().Name, ex)
+                Ret = String.Concat("error_", ex.Message)
             End Try
 
             Return WebUtility.UrlDecode(Ret)

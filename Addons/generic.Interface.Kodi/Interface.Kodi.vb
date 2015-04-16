@@ -69,9 +69,7 @@ Public Class KodiInterface
 
     Public ReadOnly Property ModuleType() As List(Of Enums.ModuleEventType) Implements Interfaces.GenericModule.ModuleType
         Get
-            Return New List(Of Enums.ModuleEventType)(New Enums.ModuleEventType() {Enums.ModuleEventType.AfterEdit_Movie, Enums.ModuleEventType.ScraperMulti_Movie, Enums.ModuleEventType.ScraperSingle_Movie, _
-                                                                                   Enums.ModuleEventType.AfterEdit_TVEpisode, Enums.ModuleEventType.ScraperMulti_TVEpisode, Enums.ModuleEventType.ScraperSingle_TVEpisode, _
-                                                                                   Enums.ModuleEventType.AfterUpdateDB_TV})
+            Return New List(Of Enums.ModuleEventType)(New Enums.ModuleEventType() {Enums.ModuleEventType.Sync_Movie})
         End Get
     End Property
 
@@ -107,50 +105,63 @@ Public Class KodiInterface
 #Region "Methods"
 
     Public Function RunGeneric(ByVal mType As Enums.ModuleEventType, ByRef _params As List(Of Object), ByRef _refparam As Object, ByRef _dbmovie As Structures.DBMovie, ByRef _dbtv As Structures.DBTV) As Interfaces.ModuleResult Implements Interfaces.GenericModule.RunGeneric
-        'Select Case mType
-        '    Case Enums.ModuleEventType.AfterEdit_Movie
-        '        If MySettings.RenameEdit_Movies AndAlso Not String.IsNullOrEmpty(MySettings.FoldersPattern_Movies) AndAlso Not String.IsNullOrEmpty(MySettings.FilesPattern_Movies) Then
-        '            Dim tDBMovie As EmberAPI.Structures.DBMovie = DirectCast(_refparam, EmberAPI.Structures.DBMovie)
-        '            Dim BatchMode As Boolean = DirectCast(_params(0), Boolean)
-        '            Dim ToNFO As Boolean = DirectCast(_params(1), Boolean)
-        '            Dim ShowErrors As Boolean = DirectCast(_params(2), Boolean)
-        '            FileFolderRenamer.RenameSingle_Movie(tDBMovie, MySettings.FoldersPattern_Movies, MySettings.FilesPattern_Movies, BatchMode, ToNFO, ShowErrors, True)
-        '        End If
-        '    Case Enums.ModuleEventType.ScraperMulti_Movie
-        '        If MySettings.RenameMulti_Movies AndAlso Not String.IsNullOrEmpty(MySettings.FoldersPattern_Movies) AndAlso Not String.IsNullOrEmpty(MySettings.FilesPattern_Movies) Then
-        '            FileFolderRenamer.RenameSingle_Movie(_dbmovie, MySettings.FoldersPattern_Movies, MySettings.FilesPattern_Movies, False, False, False, False)
-        '        End If
-        '    Case Enums.ModuleEventType.ScraperSingle_Movie
-        '        If MySettings.RenameSingle_Movies AndAlso Not String.IsNullOrEmpty(MySettings.FoldersPattern_Movies) AndAlso Not String.IsNullOrEmpty(MySettings.FilesPattern_Movies) Then
-        '            FileFolderRenamer.RenameSingle_Movie(_dbmovie, MySettings.FoldersPattern_Movies, MySettings.FilesPattern_Movies, False, False, False, True)
-        '        End If
-        '    Case Enums.ModuleEventType.AfterEdit_TVEpisode
-        '        If MySettings.RenameEdit_Episodes AndAlso Not String.IsNullOrEmpty(MySettings.FilesPattern_Episodes) Then
-        '            Dim tDBTV As EmberAPI.Structures.DBTV = DirectCast(_refparam, EmberAPI.Structures.DBTV)
-        '            Dim BatchMode As Boolean = DirectCast(_params(0), Boolean)
-        '            Dim ToNFO As Boolean = DirectCast(_params(1), Boolean)
-        '            Dim ShowErrors As Boolean = DirectCast(_params(2), Boolean)
-        '            FileFolderRenamer.RenameSingle_Episode(tDBTV, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, BatchMode, ToNFO, ShowErrors, True)
-        '        End If
-        '    Case Enums.ModuleEventType.AfterUpdateDB_TV
-        '        If MySettings.RenameUpdate_Episodes AndAlso Not String.IsNullOrEmpty(MySettings.FilesPattern_Episodes) Then
-        '            Dim BatchMode As Boolean = DirectCast(_params(0), Boolean)
-        '            Dim ToNFO As Boolean = DirectCast(_params(1), Boolean)
-        '            Dim ShowErrors As Boolean = DirectCast(_params(2), Boolean)
-        '            Dim ToDB As Boolean = DirectCast(_params(3), Boolean)
-        '            Dim Source As String = DirectCast(_params(4), String)
-        '            Dim FFRenamer As New FileFolderRenamer
-        '            FFRenamer.RenameAfterUpdateDB_TV(Source, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, BatchMode, ToNFO, ShowErrors, ToDB)
-        '        End If
-        '    Case Enums.ModuleEventType.ScraperMulti_TVEpisode
-        '        If MySettings.RenameMulti_Shows AndAlso Not String.IsNullOrEmpty(MySettings.FilesPattern_Episodes) Then
-        '            FileFolderRenamer.RenameSingle_Episode(_dbtv, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, True, False, False, False)
-        '        End If
-        '    Case Enums.ModuleEventType.ScraperSingle_TVEpisode
-        '        If MySettings.RenameSingle_Shows AndAlso Not String.IsNullOrEmpty(MySettings.FilesPattern_Episodes) Then
-        '            FileFolderRenamer.RenameSingle_Episode(_dbtv, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, False, False, False, True)
-        '        End If
-        'End Select
+        Select mType
+            Case Enums.ModuleEventType.Sync_Movie
+                If Master.currMovie.IsOnline OrElse FileUtils.Common.CheckOnlineStatus_Movie(Master.currMovie, True) Then
+                    Cursor.Current = Cursors.WaitCursor
+                    Dim tDBMovie As EmberAPI.Structures.DBMovie = DirectCast(_refparam, EmberAPI.Structures.DBMovie)
+
+                    Dim Settings As Kodi.JSON.MySettings
+                    Settings.HostIP = MySettings.HostIP
+                    Settings.Password = MySettings.Password
+                    Settings.Username = MySettings.Username
+                    Settings.WebserverPort = MySettings.WebserverPort
+
+                    Dim _json As New Kodi.JSON(Settings)
+
+                    If _json.UpdateMovieInfo(tDBMovie.ID) Then
+                        ModulesManager.Instance.RunGeneric(Enums.ModuleEventType.Notification, New List(Of Object)(New Object() {"info", Nothing, "Kodi Interface", "Sync OK", New Bitmap(My.Resources.logo)}))
+                    Else
+                        ModulesManager.Instance.RunGeneric(Enums.ModuleEventType.Notification, New List(Of Object)(New Object() {"error", 1, "Kodi Interface", "Sync failed", Nothing}))
+                    End If
+
+                    Cursor.Current = Cursors.Default
+                End If
+                '    Case Enums.ModuleEventType.ScraperMulti_Movie
+                '        If MySettings.RenameMulti_Movies AndAlso Not String.IsNullOrEmpty(MySettings.FoldersPattern_Movies) AndAlso Not String.IsNullOrEmpty(MySettings.FilesPattern_Movies) Then
+                '            FileFolderRenamer.RenameSingle_Movie(_dbmovie, MySettings.FoldersPattern_Movies, MySettings.FilesPattern_Movies, False, False, False, False)
+                '        End If
+                '    Case Enums.ModuleEventType.ScraperSingle_Movie
+                '        If MySettings.RenameSingle_Movies AndAlso Not String.IsNullOrEmpty(MySettings.FoldersPattern_Movies) AndAlso Not String.IsNullOrEmpty(MySettings.FilesPattern_Movies) Then
+                '            FileFolderRenamer.RenameSingle_Movie(_dbmovie, MySettings.FoldersPattern_Movies, MySettings.FilesPattern_Movies, False, False, False, True)
+                '        End If
+                '    Case Enums.ModuleEventType.AfterEdit_TVEpisode
+                '        If MySettings.RenameEdit_Episodes AndAlso Not String.IsNullOrEmpty(MySettings.FilesPattern_Episodes) Then
+                '            Dim tDBTV As EmberAPI.Structures.DBTV = DirectCast(_refparam, EmberAPI.Structures.DBTV)
+                '            Dim BatchMode As Boolean = DirectCast(_params(0), Boolean)
+                '            Dim ToNFO As Boolean = DirectCast(_params(1), Boolean)
+                '            Dim ShowErrors As Boolean = DirectCast(_params(2), Boolean)
+                '            FileFolderRenamer.RenameSingle_Episode(tDBTV, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, BatchMode, ToNFO, ShowErrors, True)
+                '        End If
+                '    Case Enums.ModuleEventType.AfterUpdateDB_TV
+                '        If MySettings.RenameUpdate_Episodes AndAlso Not String.IsNullOrEmpty(MySettings.FilesPattern_Episodes) Then
+                '            Dim BatchMode As Boolean = DirectCast(_params(0), Boolean)
+                '            Dim ToNFO As Boolean = DirectCast(_params(1), Boolean)
+                '            Dim ShowErrors As Boolean = DirectCast(_params(2), Boolean)
+                '            Dim ToDB As Boolean = DirectCast(_params(3), Boolean)
+                '            Dim Source As String = DirectCast(_params(4), String)
+                '            Dim FFRenamer As New FileFolderRenamer
+                '            FFRenamer.RenameAfterUpdateDB_TV(Source, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, BatchMode, ToNFO, ShowErrors, ToDB)
+                '        End If
+                '    Case Enums.ModuleEventType.ScraperMulti_TVEpisode
+                '        If MySettings.RenameMulti_Shows AndAlso Not String.IsNullOrEmpty(MySettings.FilesPattern_Episodes) Then
+                '            FileFolderRenamer.RenameSingle_Episode(_dbtv, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, True, False, False, False)
+                '        End If
+                '    Case Enums.ModuleEventType.ScraperSingle_TVEpisode
+                '        If MySettings.RenameSingle_Shows AndAlso Not String.IsNullOrEmpty(MySettings.FilesPattern_Episodes) Then
+                '            FileFolderRenamer.RenameSingle_Episode(_dbtv, MySettings.FoldersPattern_Seasons, MySettings.FilesPattern_Episodes, False, False, False, True)
+                '        End If
+        End Select
         Return New Interfaces.ModuleResult With {.breakChain = False}
     End Function
 
@@ -281,7 +292,9 @@ Public Class KodiInterface
         cmnuKodi_Movies.Image = New Bitmap(My.Resources.icon)
         cmnuKodi_Movies.Text = "Kodi"
         cmnuKodi_Movies.ShortcutKeys = CType((System.Windows.Forms.Keys.Control Or System.Windows.Forms.Keys.R), System.Windows.Forms.Keys)
+        cmnuKodiAdd_Movie.Image = New Bitmap(My.Resources.menuAdd)
         cmnuKodiAdd_Movie.Text = "Add"
+        cmnuKodiSync_Movie.Image = New Bitmap(My.Resources.menuSync)
         cmnuKodiSync_Movie.Text = "Sync"
         cmnuKodi_Movies.DropDownItems.Add(cmnuKodiAdd_Movie)
         cmnuKodi_Movies.DropDownItems.Add(cmnuKodiSync_Movie)
@@ -293,6 +306,7 @@ Public Class KodiInterface
         cmnuKodi_Episodes.Image = New Bitmap(My.Resources.icon)
         cmnuKodi_Episodes.Text = "Kodi"
         cmnuKodi_Episodes.ShortcutKeys = CType((System.Windows.Forms.Keys.Control Or System.Windows.Forms.Keys.R), System.Windows.Forms.Keys)
+        cmnuKodiSync_TVEpisode.Image = New Bitmap(My.Resources.menuSync)
         cmnuKodiSync_TVEpisode.Text = "Sync"
         cmnuKodi_Episodes.DropDownItems.Add(cmnuKodiSync_TVEpisode)
 
@@ -303,6 +317,7 @@ Public Class KodiInterface
         cmnuKodi_Shows.Image = New Bitmap(My.Resources.icon)
         cmnuKodi_Shows.Text = "Kodi"
         cmnuKodi_Shows.ShortcutKeys = CType((System.Windows.Forms.Keys.Control Or System.Windows.Forms.Keys.R), System.Windows.Forms.Keys)
+        cmnuKodiSync_TVShow.Image = New Bitmap(My.Resources.menuSync)
         cmnuKodiSync_TVShow.Text = "Sync"
         cmnuKodi_Shows.DropDownItems.Add(cmnuKodiSync_TVShow)
 

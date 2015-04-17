@@ -224,7 +224,7 @@ Namespace Kodi
 
         End Function
 
-        Private Function GetMovies() As List(Of KodiMovie)
+        Public Function GetMovies() As List(Of KodiMovie)
             Dim MovieList As New List(Of KodiMovie)
             Dim Command As String = "{""jsonrpc"": ""2.0"", ""method"": ""VideoLibrary.GetMovies"", ""params"": { ""properties"" : [""file"", ""imdbnumber""]}, ""id"": ""libMovies""}"
             Dim Result As MatchCollection = Regex.Matches(SendJSON(Command), "\{""file"":""(?<PATH>.*?)"",""imdbnumber"":""(?<IMDBID>.*?)"",""label"":""(?<LABEL>.*?)"",""movieid"":(?<ID>.*?)\}", RegexOptions.Singleline And RegexOptions.IgnoreCase)
@@ -249,12 +249,23 @@ Namespace Kodi
             Return movieID
         End Function
 
+        Public Function GetVideoSources() As List(Of KodiSource)
+            Dim SourceList As New List(Of KodiSource)
+
+            Dim Command As String = "{""jsonrpc"": ""2.0"", ""method"": ""Files.GetSources"", ""params"": {""media"": ""video""}, ""id"": 1}"
+            Dim Result As MatchCollection = Regex.Matches(SendJSON(Command), "\{""file"":""(?<PATH>.*?)"",""label"":""(?<LABEL>.*?)""\}", RegexOptions.Singleline And RegexOptions.IgnoreCase)
+            For Each kSource As Match In Result
+                SourceList.Add(New KodiSource With {.Path = Regex.Replace(kSource.Groups(1).Value.ToString, "\\\\", "\"), .Label = kSource.Groups(2).Value.ToString})
+            Next
+            Return SourceList
+        End Function
+
         Private Function SendJSON(ByRef Send As String) As String
             Dim Ret As String = String.Empty
             Try
                 Dim authInfo As String = _mySettings.Username & ":" & _mySettings.Password
                 authInfo = Convert.ToBase64String(Encoding.Default.GetBytes(authInfo))
-                Dim Uri As String = "http://" & _mySettings.HostIP & ":" & _mySettings.WebserverPort & "/jsonrpc?request="
+                Dim Uri As String = "http://" & _mySettings.HostIP & ":" & _mySettings.WebPort & "/jsonrpc?request="
 
                 Dim request As HttpWebRequest = CType(HttpWebRequest.Create(Uri), HttpWebRequest)
                 request.Headers("Authorization") = "Basic " & authInfo
@@ -291,13 +302,13 @@ Namespace Kodi
             Dim Username As String
             Dim Password As String
             Dim HostIP As String
-            Dim WebserverPort As String
+            Dim WebPort As String
 
 #End Region 'Fields
 
         End Structure
 
-        Private Class KodiMovie
+        Public Class KodiMovie
 
 
 #Region "Fields"
@@ -362,6 +373,57 @@ Namespace Kodi
             Public Sub Clear()
                 Me._id = -1
                 Me._imdbid = String.Empty
+                Me._label = String.Empty
+                Me._path = String.Empty
+            End Sub
+
+#End Region 'Methods
+
+        End Class
+
+        Public Class KodiSource
+
+
+#Region "Fields"
+
+            Private _label As String
+            Private _path As String
+
+#End Region 'Fields
+
+#Region "Constructors"
+
+            Public Sub New()
+                Me.Clear()
+            End Sub
+
+#End Region 'Constructors
+
+#Region "Properties"
+
+            Public Property Label() As String
+                Get
+                    Return _label
+                End Get
+                Set(ByVal value As String)
+                    _label = value
+                End Set
+            End Property
+
+            Public Property Path() As String
+                Get
+                    Return _path
+                End Get
+                Set(ByVal value As String)
+                    _path = value
+                End Set
+            End Property
+
+#End Region 'Properties
+
+#Region "Methods"
+
+            Public Sub Clear()
                 Me._label = String.Empty
                 Me._path = String.Empty
             End Sub

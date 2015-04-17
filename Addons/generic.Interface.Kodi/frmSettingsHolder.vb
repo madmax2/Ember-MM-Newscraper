@@ -1,7 +1,4 @@
-﻿Imports EmberAPI
-Imports System.IO
-
-' ################################################################################
+﻿' ################################################################################
 ' #                             EMBER MEDIA MANAGER                              #
 ' ################################################################################
 ' ################################################################################
@@ -20,6 +17,9 @@ Imports System.IO
 ' # You should have received a copy of the GNU General Public License            #
 ' # along with Ember Media Manager.  If not, see <http://www.gnu.org/licenses/>. #
 ' ################################################################################
+
+Imports EmberAPI
+Imports System.IO
 
 Public Class frmSettingsHolder
 
@@ -46,7 +46,7 @@ Public Class frmSettingsHolder
         RaiseEvent ModuleEnabledChanged(chkEnabled.Checked, 0)
     End Sub
 
-    Private Sub TextboxTextChanged(sender As Object, e As EventArgs) Handles txtHostIP.TextChanged, txtPassword.TextChanged, txtWebserverPort.TextChanged, txtUsername.TextChanged
+    Private Sub TextboxTextChanged(sender As Object, e As EventArgs)
         RaiseEvent ModuleSettingsChanged()
     End Sub
 
@@ -56,4 +56,9 @@ Public Class frmSettingsHolder
 
 #End Region 'Methods
 
+    Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
+        Using dHost As New dlgHost
+            dHost.ShowDialog()
+        End Using
+    End Sub
 End Class

@@ -19,6 +19,7 @@
 ' ################################################################################
 
 Imports EmberAPI
+Imports System.IO
 
 Public Class KodiInterface
     Implements Interfaces.GenericModule
@@ -105,7 +106,7 @@ Public Class KodiInterface
 #Region "Methods"
 
     Public Function RunGeneric(ByVal mType As Enums.ModuleEventType, ByRef _params As List(Of Object), ByRef _refparam As Object, ByRef _dbmovie As Structures.DBMovie, ByRef _dbtv As Structures.DBTV) As Interfaces.ModuleResult Implements Interfaces.GenericModule.RunGeneric
-        Select mType
+        Select Case mType
             Case Enums.ModuleEventType.Sync_Movie
                 If Master.currMovie.IsOnline OrElse FileUtils.Common.CheckOnlineStatus_Movie(Master.currMovie, True) Then
                     Cursor.Current = Cursors.WaitCursor
@@ -115,7 +116,7 @@ Public Class KodiInterface
                     Settings.HostIP = MySettings.HostIP
                     Settings.Password = MySettings.Password
                     Settings.Username = MySettings.Username
-                    Settings.WebserverPort = MySettings.WebserverPort
+                    Settings.WebPort = MySettings.WebPort
 
                     Dim _json As New Kodi.JSON(Settings)
 
@@ -175,7 +176,7 @@ Public Class KodiInterface
             Settings.HostIP = MySettings.HostIP
             Settings.Password = MySettings.Password
             Settings.Username = MySettings.Username
-            Settings.WebserverPort = MySettings.WebserverPort
+            Settings.WebPort = MySettings.WebPort
 
             Dim _json As New Kodi.JSON(Settings)
 
@@ -210,7 +211,7 @@ Public Class KodiInterface
             Settings.HostIP = MySettings.HostIP
             Settings.Password = MySettings.Password
             Settings.Username = MySettings.Username
-            Settings.WebserverPort = MySettings.WebserverPort
+            Settings.WebPort = MySettings.WebPort
 
             Dim _json As New Kodi.JSON(Settings)
 
@@ -374,10 +375,10 @@ Public Class KodiInterface
         Dim SPanel As New Containers.SettingsPanel
         Me._setup = New frmSettingsHolder
         Me._setup.chkEnabled.Checked = Me._enabled
-        Me._setup.txtHostIP.Text = MySettings.HostIP
-        Me._setup.txtPassword.Text = MySettings.Password
-        Me._setup.txtUsername.Text = MySettings.Username
-        Me._setup.txtWebserverPort.Text = MySettings.WebserverPort
+        'Me._setup.txtHostIP.Text = MySettings.HostIP
+        'Me._setup.txtPassword.Text = MySettings.Password
+        'Me._setup.txtUsername.Text = MySettings.Username
+        'Me._setup.txtWebserverPort.Text = MySettings.WebserverPort
         SPanel.Name = Me._Name
         SPanel.Text = "Kodi Interface"
         SPanel.Prefix = "Kodi_"
@@ -394,7 +395,7 @@ Public Class KodiInterface
         MySettings.HostIP = clsAdvancedSettings.GetSetting("HostIP", String.Empty)
         MySettings.Password = clsAdvancedSettings.GetSetting("Password", String.Empty)
         MySettings.Username = clsAdvancedSettings.GetSetting("Username", String.Empty)
-        MySettings.WebserverPort = clsAdvancedSettings.GetSetting("WebserverPort", String.Empty)
+        MySettings.WebPort = clsAdvancedSettings.GetSetting("WebserverPort", String.Empty)
     End Sub
 
     Private Sub mnuMainToolsRenamer_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuMainToolsKodi.Click, cmnuTrayToolsKodi.Click
@@ -428,10 +429,10 @@ Public Class KodiInterface
 
     Sub SaveEmberExternalModule(ByVal DoDispose As Boolean) Implements Interfaces.GenericModule.SaveSetup
         Me._enabled = Me._setup.chkEnabled.Checked
-        MySettings.HostIP = Me._setup.txtHostIP.Text
-        MySettings.Password = Me._setup.txtPassword.Text
-        MySettings.Username = Me._setup.txtUsername.Text
-        MySettings.WebserverPort = Me._setup.txtWebserverPort.Text
+        'MySettings.HostIP = Me._setup.txtHostIP.Text
+        'MySettings.Password = Me._setup.txtPassword.Text
+        'MySettings.Username = Me._setup.txtUsername.Text
+        'MySettings.WebserverPort = Me._setup.txtWebserverPort.Text
         SaveSettings()
         If DoDispose Then
             RemoveHandler Me._setup.ModuleEnabledChanged, AddressOf Handle_SetupChanged
@@ -445,7 +446,7 @@ Public Class KodiInterface
             settings.SetSetting("HostIP", MySettings.HostIP)
             settings.SetSetting("Password", MySettings.Password)
             settings.SetSetting("Username", MySettings.Username)
-            settings.SetSetting("WebserverPort", MySettings.WebserverPort)
+            settings.SetSetting("WebserverPort", MySettings.WebPort)
         End Using
     End Sub
 
@@ -460,11 +461,135 @@ Public Class KodiInterface
         Dim Username As String
         Dim Password As String
         Dim HostIP As String
-        Dim WebserverPort As String
+        Dim WebPort As String
 
 #End Region 'Fields
 
     End Structure
+
+    Public Class Host
+
+#Region "Fields"
+
+        Private _hostip As String
+        Private _label As String
+        Private _password As String
+        Private _paths As Hashtable
+        Private _realtimesync As Boolean
+        Private _remotepathseparator As String
+        Private _username As String
+        Private _webport As String
+
+#End Region 'Fields
+
+#Region "Constructors"
+
+        Public Sub New()
+            Clear()
+        End Sub
+
+#End Region 'Constructors
+
+#Region "Properties"
+
+        Public Property HostIP() As String
+            Get
+                Return Me._hostip
+            End Get
+            Set(ByVal value As String)
+                Me._hostip = value
+            End Set
+        End Property
+
+        Public Property Label() As String
+            Get
+                Return Me._label
+            End Get
+            Set(ByVal value As String)
+                Me._label = value
+            End Set
+        End Property
+
+        Public Property Password() As String
+            Get
+                If String.IsNullOrEmpty(Me._password) Then
+                    Return String.Empty
+                Else
+                    Return StringUtils.Decode(Me._password)
+                End If
+            End Get
+            Set(ByVal value As String)
+                If String.IsNullOrEmpty(value) Then
+                    Me._password = value
+                Else
+                    Me._password = StringUtils.Encode(value)
+                End If
+            End Set
+        End Property
+
+        Public Property Paths() As Hashtable
+            Get
+                Return Me._paths
+            End Get
+            Set(ByVal value As Hashtable)
+                Me._paths = value
+            End Set
+        End Property
+
+        Public Property RealTimeSync() As Boolean
+            Get
+                Return Me._realtimesync
+            End Get
+            Set(ByVal value As Boolean)
+                Me._realtimesync = value
+            End Set
+        End Property
+
+        Public Property RemotePathSeparator() As String
+            Get
+                Return Me._remotepathseparator
+            End Get
+            Set(ByVal value As String)
+                Me._remotepathseparator = value
+            End Set
+        End Property
+
+        Public Property Username() As String
+            Get
+                Return Me._username
+            End Get
+            Set(ByVal value As String)
+                Me._username = value
+            End Set
+        End Property
+
+        Public Property WebPort() As String
+            Get
+                Return Me._webport
+            End Get
+            Set(ByVal value As String)
+                Me._webport = value
+            End Set
+        End Property
+
+#End Region 'Properties
+
+#Region "Methods"
+
+        Public Sub Clear()
+            Me._hostip = String.Empty
+            Me._label = String.Empty
+            Me._password = String.Empty
+            Me._paths = New Hashtable
+            Me._realtimesync = False
+            Me._remotepathseparator = Path.DirectorySeparatorChar
+            Me._username = String.Empty
+            Me._webport = String.Empty
+        End Sub
+
+#End Region 'Methods
+
+    End Class
 
 #End Region 'Nested Types
 
